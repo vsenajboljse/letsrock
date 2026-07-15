@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Questionnaire</title>
+
+<style>
+
+body {
+  font-family: Arial, sans-serif;
+  background: #f7f7f7;
+  margin: 0;
+  padding: 20px;
+}
+
+.container {
+  max-width: 700px;
+  margin: auto;
+  background: white;
+  padding: 25px;
+  border-radius: 12px;
+}
+
+h1 {
+  text-align: center;
+}
+
+input,
+textarea,
+button {
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 15px;
+  padding: 14px;
+  font-size: 16px;
+}
+
+textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+#dropzone {
+
+  border: 2px dashed #888;
+  border-radius: 12px;
+  text-align: center;
+  padding: 40px;
+  cursor: pointer;
+  margin-bottom: 20px;
+
+}
+
+#dropzone.active {
+
+  background: #eef5ff;
+  border-color: #0077ff;
+
+}
+
+#preview {
+
+  text-align: center;
+
+}
+
+#preview img {
+
+  width: 200px;
+  border-radius: 10px;
+
+}
+
+button {
+
+  background: #0077ff;
+  color: white;
+  border: none;
+  cursor: pointer;
+
+}
+
+button:disabled {
+
+  background: gray;
+
+}
+
+</style>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/compressorjs/1.2.1/compressor.min.js"></script>
+
+</head>
+
+
+<body>
+
+
+<div class="container">
+
+
+<h1>Tell us about your rock</h1>
+
+
+<form id="questionnaire">
+
+
+<input
+type="text"
+id="name"
+placeholder="Your Name"
+required>
+
+
+<input
+type="email"
+id="email"
+placeholder="Email (optional)">
+
+
+<h3>Where is it from?</h3>
+<textarea id="answer1" required></textarea>
+
+
+<h3>Is there a story behind it?</h3>
+<textarea id="answer2" required></textarea>
+
+
+<h3>What is the name of your rock?</h3>
+<textarea id="answer3" required></textarea>
+
+
+<h3>If you would like to assign an age to your rock, how old would you say it is?</h3>
+<textarea id="answer4" required></textarea>
+
+
+<h3>How do you feel when you handle and touch the rock?</h3>
+<textarea id="answer5" required></textarea>
+
+
+<h3>In general, do you care about stones? Why or why not?</h3>
+<textarea id="answer6" required></textarea>
+
+
+<h3>What is your first memory of stones?</h3>
+<textarea id="answer7" required></textarea>
+
+
+<h3>Are there any random facts or ideas about stones you would still like to share?</h3>
+<textarea id="answer8" required></textarea>
+
+
+<h3>What would you say links stones with the concept of care?</h3>
+<textarea id="answer9" required></textarea>
+
+
+
+<div id="dropzone">
+
+📷 Tap to upload or drag an image here
+
+</div>
+
+
+<input
+type="file"
+id="fileInput"
+accept="image/*"
+capture="environment"
+hidden>
+
+
+<div id="preview"></div>
+
+
+<button id="submitBtn" type="submit">
+
+Submit
+
+</button>
+
+
+</form>
+
+
+
+<div id="successMessage" hidden>
+
+<h2>Thank You!</h2>
+
+<p>Your response has been submitted.</p>
+
+</div>
+
+
+</div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+
+const { createClient } = supabase;
+
+
+// IMPORTANT:
+// Replace YOUR_ANON_KEY with your real Supabase anon public key
+
+const supabaseUrl = "https://srqsahczegjnlkknwjvq.supabase.co";
+
+const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNycXNhaGN6ZWdqbmxra253anZxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1OTg1MTYsImV4cCI6MjA5NzE3NDUxNn0.ebyFhPQ90v3nIcqbhPA9Oqh0zB-Y9WcB33oumvhrngg";
+
+
+const supabaseClient = createClient(
+  supabaseUrl,
+  supabaseKey
+);
+
+
+
+const dropzone = document.getElementById("dropzone");
+
+const fileInput = document.getElementById("fileInput");
+
+const preview = document.getElementById("preview");
+
+const form = document.getElementById("questionnaire");
+
+const submitBtn = document.getElementById("submitBtn");
+
+
+let selectedFile = null;
+
+
+
+// Prevent browser opening dragged images
+
+document.addEventListener(
+"dragover",
+function(e){
+
+  e.preventDefault();
+
+});
+
+
+document.addEventListener(
+"drop",
+function(e){
+
+  e.preventDefault();
+
+});
+
+
+
+// Click upload area
+
+dropzone.addEventListener(
+"click",
+function(){
+
+  fileInput.click();
+
+});
+
+
+
+// Highlight drop area
+
+dropzone.addEventListener(
+"dragover",
+function(e){
+
+  e.preventDefault();
+
+  dropzone.classList.add("active");
+
+});
+
+
+
+dropzone.addEventListener(
+"dragleave",
+function(){
+
+  dropzone.classList.remove("active");
+
+});
+
+
+
+// Handle dropped image
+
+dropzone.addEventListener(
+"drop",
+function(e){
+
+  e.preventDefault();
+
+  dropzone.classList.remove("active");
+
+  processFile(
+    e.dataTransfer.files[0]
+  );
+
+});
+
+
+
+// Handle selected image
+
+fileInput.addEventListener(
+"change",
+function(){
+
+  processFile(
+    fileInput.files[0]
+  );
+
+});
+
+
+
+
+// Compress image
+
+function processFile(file){
+
+
+  if(!file){
+
+    return;
+
+  }
+
+
+
+  if(!file.type.startsWith("image/")){
+
+    alert("Please upload an image.");
+
+    return;
+
+  }
+
+
+
+  new Compressor(
+    file,
+    {
+
+      quality:0.7,
+
+      success(result){
+
+
+        if(result.size > 2 * 1024 * 1024){
+
+          alert(
+          "Image is still larger than 2MB after compression."
+          );
+
+          return;
+
+        }
+
+
+        selectedFile = result;
+
+
+
+        preview.innerHTML = "";
+
+        const img = document.createElement("img");
+
+        img.src = URL.createObjectURL(result);
+
+
+        preview.appendChild(img);
+
+
+      }
+
+    }
+
+  );
+
+
+}
+
+
+
+
+// Submit form
+
+form.addEventListener(
+"submit",
+async function(e){
+
+
+e.preventDefault();
+
+
+
+if(!selectedFile){
+
+alert("Please upload an image.");
+
+return;
+
+}
+
+
+
+submitBtn.disabled = true;
+
+submitBtn.textContent = "Uploading...";
+
+
+
+try{
+
+
+const fileName =
+crypto.randomUUID() + ".jpg";
+
+
+
+// Upload image
+
+const {
+error: uploadError
+}
+=
+await supabaseClient.storage
+.from("questionnaire-images")
+.upload(
+fileName,
+selectedFile
+);
+
+
+
+if(uploadError){
+
+throw uploadError;
+
+}
+
+
+
+
+const {data:imageData}
+=
+supabaseClient.storage
+.from("questionnaire-images")
+.getPublicUrl(fileName);
+
+
+
+
+// Save questionnaire
+
+const {
+error:insertError
+}
+=
+await supabaseClient
+.from("questionnaire_responses")
+.insert([{
+
+
+name:
+document.getElementById("name").value,
+
+
+email:
+document.getElementById("email").value || null,
+
+
+answers:{
+
+
+q1:document.getElementById("answer1").value,
+
+q2:document.getElementById("answer2").value,
+
+q3:document.getElementById("answer3").value,
+
+q4:document.getElementById("answer4").value,
+
+q5:document.getElementById("answer5").value,
+
+q6:document.getElementById("answer6").value,
+
+q7:document.getElementById("answer7").value,
+
+q8:document.getElementById("answer8").value,
+
+q9:document.getElementById("answer9").value
+
+
+},
+
+
+image_url:
+imageData.publicUrl
+
+
+}]);
+
+
+
+if(insertError){
+
+throw insertError;
+
+}
+
+
+
+
+form.hidden = true;
+
+
+document
+.getElementById("successMessage")
+.hidden = false;
+
+
+
+}
+
+catch(error){
+
+
+console.error(
+"Submission error:",
+error
+);
+
+
+alert(
+"Submission failed. Check the browser console for details."
+);
+
+
+
+submitBtn.disabled = false;
+
+submitBtn.textContent = "Submit";
+
+
+}
+
+
+});
+
+</script>
+
+</body>
+
+</html>
