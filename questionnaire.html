@@ -118,8 +118,8 @@ if you are having any issues with the questionnaire feel free to use this google
  <a href="https://docs.google.com/forms/d/e/1FAIpQLScpVfAy2vEvaAXdUtTr_9OV4YQ8GHrNKKxlFtvpAHzcpEovZw/viewform" target="_blank" rel="noopener noreferrer">Google Form</a>
 </p>
 
-  
-  <form id="questionnaire">
+
+<form id="questionnaire">
 
 
 <input
@@ -306,6 +306,7 @@ function(e){
 
   dropzone.classList.remove("active");
 
+
   processFile(
     e.dataTransfer.files[0]
   );
@@ -333,14 +334,13 @@ function(){
 
 function processFile(file){
 
-
   if(!file){
-
     return;
-
   }
 
-
+  // Clear previously selected image
+  selectedFile = null;
+  preview.innerHTML = "";
 
   if(!file.type.startsWith("image/")){
 
@@ -350,47 +350,81 @@ function processFile(file){
 
   }
 
+if (file.size > 20 * 1024 * 1024) {
 
+  alert(
+    "Please upload an image smaller than 20MB."
+  );
+
+  return;
+
+}
 
   new Compressor(
-    file,
-    {
+  file,
+  {
 
-      quality:0.7,
+    // Compression quality
+    quality: 0.75,
 
-      success(result){
+    // Automatically resize very large images
+    maxWidth: 2000,
+    maxHeight: 2000,
 
+    // Convert to JPEG
+    mimeType: "image/jpeg",
 
-        if(result.size > 2 * 1024 * 1024){
+    success(result) {
 
-          alert(
-          "Image is still larger than 2MB after compression."
-          );
+      // Maximum size AFTER compression = 5 MB
+      if (result.size > 5 * 1024 * 1024) {
 
-          return;
+        alert(
+          "Image is still larger than 5MB after compression."
+        );
 
-        }
-
-
-        selectedFile = result;
-
-
-
-        preview.innerHTML = "";
-
-        const img = document.createElement("img");
-
-        img.src = URL.createObjectURL(result);
-
-
-        preview.appendChild(img);
-
+        return;
 
       }
 
+      selectedFile = result;
+
+preview.innerHTML = "";
+
+const img = document.createElement("img");
+
+img.src = URL.createObjectURL(result);
+
+preview.appendChild(img);
+
+const sizeMB = (result.size / (1024 * 1024)).toFixed(1);
+
+const message = document.createElement("p");
+
+message.textContent =
+  `Image ready ✓ (${sizeMB} MB)`;
+
+message.style.marginTop = "10px";
+message.style.fontWeight = "bold";
+
+preview.appendChild(message);
+    },
+
+    error(error) {
+
+      console.error(
+        "Image compression error:",
+        error
+      );
+
+      alert(
+        "There was a problem processing the image."
+      );
+
     }
 
-  );
+  }
+);
 
 
 }
@@ -442,8 +476,12 @@ error: uploadError
 await supabaseClient.storage
 .from("questionnaire-images")
 .upload(
-fileName,
-selectedFile
+  fileName,
+  selectedFile,
+  {
+    contentType: "image/jpeg",
+    upsert: false
+  }
 );
 
 
